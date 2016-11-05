@@ -27,8 +27,7 @@ class Twitter:
 
     def down_search(self, q, geocode, epoch_time):
         """
-        A search function that will search twitter and return a boolean value based upon if
-        it meets certain criteria
+        A search function that will search twitter and insert into redis the result
         :param q: string, search criteria
         :param geocode: tuple, latitude, longitude, radius (either mi or km)
         :param epoch_time: int, the epoch time
@@ -49,8 +48,7 @@ class Twitter:
 
     def backup_search(self, q, geocode, epoch_time):
         """
-        A search function that will search twitter and return a boolean value based upon if
-        it meets certain criteria
+        A search function that will search twitter and insert into redis the result
         :param q: string, search criteria
         :param geocode: tuple, latitude, longitude, radius (either mi or km)
         :param epoch_time: int, the epoch time
@@ -70,4 +68,9 @@ class Twitter:
             self.insert_redis('%s: WiFi is UP' % geocode)
 
     def insert_redis(self, value):
+        """
+        Inserts into a redis database
+        :param value: string
+        :return:
+        """
         self.r.set(time.time(), value)
