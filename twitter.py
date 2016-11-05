@@ -45,7 +45,7 @@ class Twitter:
                 count += 1
 
         if count > 4:
-            self.r.set(time.time(), '%s: WiFi is DOWN' % geocode)
+            self.insert_redis('%s: WiFi is DOWN' % geocode)
 
     def backup_search(self, q, geocode, epoch_time):
         """
@@ -67,4 +67,7 @@ class Twitter:
                 count += 1
 
         if count > 4:
-            self.r.set(time.time(), '%s: WiFi is UP' % geocode)
+            self.insert_redis('%s: WiFi is UP' % geocode)
+
+    def insert_redis(self, value):
+        self.r.set(time.time(), value)
