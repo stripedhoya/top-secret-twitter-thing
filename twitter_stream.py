@@ -23,8 +23,6 @@ class MyStreamListener(StreamListener):
         :return:
         """
         tweet = status._json
-        print('Tweet Received')
-        print(tweet['entities']['hashtags'][0]['text'])
         if tweet['entities']['hashtags'][0]['text'] == 'wifihasfallen':
             location = tweet['text'][15:]
             self.r.set(location, 'Wifi is Down')
@@ -55,4 +53,4 @@ if __name__ == '__main__':
     try:
         myStream.filter(track=['#wifihasfallen', '#returnthewifihas'])
     except Exception as e:
-        print(e)
+        pass
