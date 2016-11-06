@@ -1,4 +1,11 @@
 #!/usr/bin/env python 
+"""
+    Author: Rowland DePree
+    Created Date: 11/05/2016
+
+    A script to query Twitter to see if there are any Wifi routers down in certain areas
+
+"""
 import ConfigParser
 import os
 import time
@@ -27,7 +34,7 @@ class Twitter:
                                self.config.get('Twitter_Keys', 'access_secret'))
         return token
 
-    def down_search(self, q, geocode, epoch_time):
+    def down_search(self, q, geocode, epoch_time, dict):
         """
         A search function that will search twitter and insert into redis the result
         :param q: string, search criteria
@@ -38,18 +45,19 @@ class Twitter:
         token = tweepy.API(self.token)
         count = 0
         results = token.search(q, geocode=geocode, count=100, result_type='recent')
-        for status in results:
-            utc_time = datetime.strptime(str(status._json['created_at']), '%a %b %d %H:%M:%S +0000 %Y').replace(
-                tzinfo=pytz.UTC)
-            tweet_epoch = (utc_time - datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)).total_seconds()
-            if tweet_epoch <= epoch_time:
-                count += 1
+        if results:
+            for status in results:
+                utc_time = datetime.strptime(str(status._json['created_at']), '%a %b %d %H:%M:%S +0000 %Y').replace(
+                    tzinfo=pytz.UTC)
+                tweet_epoch = (utc_time - datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)).total_seconds()
+                if tweet_epoch <= epoch_time:
+                    count += 1
 
         if count > 4:
-            self.insert_redis('%s: WiFi is DOWN' % str(geocode))
-            print('Inserted into redis.')
+            self.insert_redis(geocode, 'Wifi is DOWN')
+            dict[geocode] = True
 
-    def backup_search(self, q, geocode, epoch_time):
+    def backup_search(self, q, geocode, epoch_time, dict):
         """
         A search function that will search twitter and insert into redis the result
         :param q: string, search criteria
@@ -60,26 +68,44 @@ class Twitter:
         token = tweepy.API(self.token)
         count = 0
         results = token.search(q, geocode=geocode, count=100, result_type='recent')
-        for status in results:
-            utc_time = datetime.strptime(str(status._json['created_at']), '%a %b %d %H:%M:%S +0000 %Y').replace(
-                tzinfo=pytz.UTC)
-            tweet_epoch = (utc_time - datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)).total_seconds()
-            if tweet_epoch <= epoch_time:
-                count += 1
+        if results:
+            for status in results:
+                utc_time = datetime.strptime(str(status._json['created_at']), '%a %b %d %H:%M:%S +0000 %Y').replace(
+                    tzinfo=pytz.UTC)
+                tweet_epoch = (utc_time - datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)).total_seconds()
+                if tweet_epoch <= epoch_time:
+                    count += 1
 
         if count > 4:
-            self.insert_redis('%s: WiFi is UP' % str(geocode))
-            print('Inserted into redis.')
+            self.insert_redis(geocode, 'Wifi is UP')
+            dict[geocode] = False
 
-    def insert_redis(self, value):
+    def insert_redis(self, key, value):
         """
         Inserts into a redis database
+        :param key: string
         :param value: string
         :return:
         """
-        self.r.set(time.time(), value)
+        self.r.set(key, value)
 
 
 if __name__ == '__main__':
     twt = Twitter()
-    twt.down_search('wifi down', None, time.time())
+    loc_dict = {'38.906364,-77.074541,0.5mi': False, '38.908009, -77.075352,0.5mi': False,
+                '38.910188, -77.074614,0.5mi': False}
+    while True:
+        min = time.localtime((time.time()))[4]
+        if min == 0 or min % 5 == 0:
+            if loc_dict['38.906364,-77.074541,0.5mi']:
+                twt.backup_search('wifi down', '38.906364,-77.074541,0.5mi', time.time(), loc_dict)
+            else:
+                twt.down_search('wifi down', '38.906364,-77.074541,0.5mi', time.time(), loc_dict)
+            if loc_dict['38.908009, -77.075352,0.5mi']:
+                twt.backup_search('wifi down', '38.908009, -77.075352,0.5mi', time.time(), loc_dict)
+            else:
+                twt.down_search('wifi down', '38.908009, -77.075352,0.5mi', time.time(), loc_dict)
+            if loc_dict['38.910188, -77.074614,0.5mi']:
+                twt.backup_search('wifi down', '38.910188, -77.074614,0.5mi', time.time(), loc_dict)
+            else:
+                twt.down_search('wifi down', '38.910188, -77.074614,0.5mi', time.time(), loc_dict)
