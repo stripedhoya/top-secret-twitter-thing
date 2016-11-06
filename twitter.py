@@ -32,6 +32,11 @@ class Twitter:
                                     self.config.get('Twitter_Keys', 'consumer_secret'))
         token.set_access_token(self.config.get('Twitter_Keys', 'access_token'),
                                self.config.get('Twitter_Keys', 'access_secret'))
+
+        token.wait_on_rate_limit = True
+        token.wait_on_rate_limit_notify = True
+        token.retry_count = 5
+
         return token
 
     def down_search(self, q, geocode, epoch_time, dict):
